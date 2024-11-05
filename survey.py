@@ -28,7 +28,7 @@ def save_data(data):
 data = load_data()
 
 # 获取视频组
-source_path = '/mnt/disk1/xey/DiffuseStyleGesture/DigitalHumanQuestionnaire/survey_source'
+source_path = './survey_source'
 
 def get_video_groups(source_path):
     videos = os.listdir(source_path)
