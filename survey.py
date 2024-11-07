@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 from datetime import datetime
-import random
+from io import StringIO
 
 # 设置页面宽度和配置
 st.set_page_config(layout="wide")
@@ -220,6 +220,22 @@ with st.form("survey_form"):
             st.write("### 感谢您的参与！")
             st.write("您的反馈对我们非常宝贵，我们会认真分析并改进。")
             # st.stop()
+
+    # 示例的问卷结果数据
+
+# 当问卷填完后生成结果文件
+csv_buffer = StringIO()
+new_data = pd.DataFrame(ratings)
+new_data.to_csv(csv_buffer, index=False, encoding="utf-8")
+csv_data = csv_buffer.getvalue()
+
+# 下载按钮
+st.download_button(
+    label="下载问卷结果",
+    data=csv_data,
+    file_name="survey_results.csv",
+    mime="text/csv"
+)
 
 # 显示当前保存的数据
 # st.write("当前数据：")
