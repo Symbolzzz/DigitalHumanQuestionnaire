@@ -46,9 +46,11 @@ def get_video_groups(source_path):
     for group in video_dict.values():
         if len(group) == 4:
             gt_video = next((v for v in group if v.startswith("GT")), None)
-            other_videos = [v for v in group if not v.startswith("GT")]
+            camn_video = next((v for v in group if v.startswith("camn")), None)
+            diffshge_video = next((v for v in group if v.startswith("diffshge")), None)
+            ours_video = next((v for v in group if v.startswith("ours")), None)
             # random.shuffle(other_videos)
-            video_groups.append([gt_video] + other_videos)
+            video_groups.append([gt_video] + [camn_video] + [diffshge_video] + [ours_video])
     
     return video_groups
 
@@ -56,7 +58,7 @@ def get_video_groups(source_path):
 video_groups = get_video_groups(source_path)
 
 st.write("# 欢迎！")
-st.markdown("你好，欢迎来到我的语音驱动数字人全身动作模型测试。非常感谢您的参与！在本次测试中，你将会看到10组视频文件，每组视频文件由5个视频组成，分别是**三个ai生成的视频**。**您需要观看并对比三个ai生成的视频**，每个视频大概30s左右，完成整个测试可能需要30分钟。我们将会收集您观看视频的反馈。希望您在做判断时可以公平客观，再次感谢您的参与！")
+st.markdown("你好，欢迎来到我的语音驱动数字人全身动作模型测试。非常感谢您的参与！在本次测试中，你将会看到9组视频文件，每组视频文件由5个视频组成，分别是**三个ai生成的视频**。**您需要观看并对比三个ai生成的视频**，每个视频大概30s左右，完成整个测试可能需要30分钟。我们将会收集您观看视频的反馈。希望您在做判断时可以公平客观，再次感谢您的参与！")
 # 获取用户名
 username = st.text_input("请输入您的名字：", key="username")
 if not username:
@@ -77,7 +79,7 @@ ratings = []
 # 问卷界面占位符
 placeholder = st.empty()
 
-st.markdown("> **下面将会展示10组视频，每组都有5个30秒左右的视频，分别是三个模型生成的视频，其中有两个模型是可以生成表情与动作，为了更好地观察表情的准确度，每个视频下方展示的是单独渲染表情的效果。请你观看三个生成的视频，并完成视频底下的三个问题。**")
+st.markdown("> **下面将会展示9组视频，每组都有5个30秒左右的视频，分别是三个模型生成的视频，其中有两个模型是可以生成表情与动作，为了更好地观察表情的准确度，每个视频下方展示的是单独渲染表情的效果。请你观看三个生成的视频，并完成视频底下的三个问题。**")
 st.markdown("*Tips1：你可以点击三个视频为静音，同时播放三个视频来更直观地对比。*")
 st.markdown("*Tips2：在测试开始之前请先往下滑确保每个视频都正确加载了，若有视频没有加载，刷新一下即可。*")
 st.markdown("三个问题分别是：")
@@ -98,22 +100,13 @@ with st.form("survey_form"):
         model_name_2 = ai_video_2.split('_')[0]
         model_name_3 = ai_video_3.split('_')[0]
         
-        # file_name = ai_video_1.split('_')[]
-        # file_name_2 = ai_video_2.split('.')[0].split('_')[1:]
         parts = ai_video_1.split('_')
         file_name = f"{parts[1]}_{parts[2]}_{parts[3]}_{parts[4]}_{parts[5]}_{parts[6]}"
         
         # 创建三列布局
-        col2, col3, col4 = st.columns(3)
+        col2, col3, col4 = st.columns([1, 1, 1])  # 1:1:1 表示每个列的宽度相等
 
-        # 在每个列中添加视频和评分控件
-        # with col1:
-        #     st.subheader("GT")
-        #     st.video(os.path.join(source_path, gt_video))
-        #     parts = gt_video.split('_')
-        #     expr_file_name = f"{parts[0]}_{parts[1]}_{parts[2]}_{parts[3]}_{parts[4]}_{parts[5]}_expr_{parts[6]}"
-        #     st.video(os.path.join(expr_source_path, expr_file_name))
-            
+        # 在每个列中添加视频和评分控件            
         with col2:
             st.subheader(f"AI 视频 1")
             parts = ai_video_1.split('_')
