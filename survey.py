@@ -15,9 +15,8 @@ def load_data():
         return pd.read_csv(csv_file)
     else:
         return pd.DataFrame(columns=[
-            "timestamp", "username", "group_id", "ai_video_id", "model_name",
-            "similarity_score", "motion_accuracy_score",
-            "mouth_movement_score", "overall_coordination_score"
+            "timestamp", "username", "group_id", "file_name", "diversity_score",
+            "expression_score", "holistic_score",
         ])
 
 # 定义一个函数来保存数据
@@ -29,6 +28,7 @@ data = load_data()
 
 # 获取视频组
 source_path = './survey_source'
+expr_source_path = './survey_expr_source'
 
 def get_video_groups(source_path):
     videos = os.listdir(source_path)
@@ -44,10 +44,10 @@ def get_video_groups(source_path):
     
     video_groups = []
     for group in video_dict.values():
-        if len(group) == 3:
+        if len(group) == 4:
             gt_video = next((v for v in group if v.startswith("GT")), None)
             other_videos = [v for v in group if not v.startswith("GT")]
-            random.shuffle(other_videos)
+            # random.shuffle(other_videos)
             video_groups.append([gt_video] + other_videos)
     
     return video_groups
@@ -56,8 +56,7 @@ def get_video_groups(source_path):
 video_groups = get_video_groups(source_path)
 
 st.write("# 欢迎！")
-st.markdown("Hello, welcome to my voice-driven digital human full-body motion model test. Thank you very much for participating! In this test, you will see 10 sets of video files, each of which consists of three videos, one is the ground truth video, and the other is two AI-generated videos. You need to watch and compare the two AI-generated videos with the ground truth video. Each video is about 30 seconds long, and it may take 20 minutes to complete the entire test. We will collect your feedback on watching the video. I hope you can be fair and objective when making judgments. Thank you again for your participation!")
-st.markdown("你好，欢迎来到我的语音驱动数字人全身动作模型测试。非常感谢您的参与！在本次测试中，你将会看到10组视频文件，每组视频文件由三个视频组成，分别是**地面真值视频，还有两个ai生成的视频**。**您需要观看并对比两个ai生成的视频与地面真值视频**，每个视频大概30s左右，完成整个测试可能需要20分钟。我们将会收集您观看视频的反馈。希望您在做判断时可以公平客观，再次感谢您的参与！")
+st.markdown("你好，欢迎来到我的语音驱动数字人全身动作模型测试。非常感谢您的参与！在本次测试中，你将会看到10组视频文件，每组视频文件由5个视频组成，分别是**三个ai生成的视频**。**您需要观看并对比三个ai生成的视频**，每个视频大概30s左右，完成整个测试可能需要30分钟。我们将会收集您观看视频的反馈。希望您在做判断时可以公平客观，再次感谢您的参与！")
 # 获取用户名
 username = st.text_input("请输入您的名字：", key="username")
 if not username:
@@ -78,9 +77,15 @@ ratings = []
 # 问卷界面占位符
 placeholder = st.empty()
 
-st.markdown("> **下面将会展示10组视频，每组都有三个30秒左右的视频，其中最左边的是GT视频，中间和右边分别是两个模型生成的视频，请你先观看GT视频，再观看两个生成的视频，并完成视频底下的四个问题。**")
+st.markdown("> **下面将会展示10组视频，每组都有5个30秒左右的视频，分别是三个模型生成的视频，其中有两个模型是可以生成表情与动作，为了更好地观察表情的准确度，每个视频下方展示的是单独渲染表情的效果。请你观看三个生成的视频，并完成视频底下的三个问题。**")
+st.markdown("*Tips1：你可以点击三个视频为静音，同时播放三个视频来更直观地对比。*")
+st.markdown("*Tips2：在测试开始之前请先往下滑确保每个视频都正确加载了，若有视频没有加载，刷新一下即可。*")
+st.markdown("三个问题分别是：")
+st.markdown("- 1. 你认为哪个的动作更丰富多样？（可以从动作幅度、动作重复度来评判）")
+st.markdown("- 2. 你认为这两个模型的面部表情哪一个更好？（嘴唇运动是否符合音频发音）")
+st.markdown("- 3. 综合考虑身体动作和面部表情，你认为哪一个的整体效果更好？（如果你觉得两者的动作没有明显的优劣，那请选择表情生成表现更好的模型）")
 
-random.shuffle(video_groups)
+# random.shuffle(video_groups)
 # 创建评分表单
 with st.form("survey_form"):
     for i, group in enumerate(video_groups):
@@ -88,80 +93,106 @@ with st.form("survey_form"):
         
         # 获取模型名称（去掉文件扩展名）
         gt_video = group[0]
-        ai_video_1, ai_video_2 = group[1], group[2]
+        ai_video_1, ai_video_2, ai_video_3 = group[1], group[2], group[3]
         model_name_1 = ai_video_1.split('_')[0]
         model_name_2 = ai_video_2.split('_')[0]
+        model_name_3 = ai_video_3.split('_')[0]
         
-        file_name_1 = ai_video_1.split('.')[0]
-        file_name_2 = ai_video_2.split('.')[0]
+        # file_name = ai_video_1.split('_')[]
+        # file_name_2 = ai_video_2.split('.')[0].split('_')[1:]
+        parts = ai_video_1.split('_')
+        file_name = f"{parts[1]}_{parts[2]}_{parts[3]}_{parts[4]}_{parts[5]}_{parts[6]}"
         
         # 创建三列布局
-        col1, col2, col3 = st.columns(3)
+        col2, col3, col4 = st.columns(3)
 
         # 在每个列中添加视频和评分控件
-        with col1:
-            st.subheader("GT")
-            st.video(os.path.join(source_path, gt_video))
-
+        # with col1:
+        #     st.subheader("GT")
+        #     st.video(os.path.join(source_path, gt_video))
+        #     parts = gt_video.split('_')
+        #     expr_file_name = f"{parts[0]}_{parts[1]}_{parts[2]}_{parts[3]}_{parts[4]}_{parts[5]}_expr_{parts[6]}"
+        #     st.video(os.path.join(expr_source_path, expr_file_name))
+            
         with col2:
             st.subheader(f"AI 视频 1")
+            parts = ai_video_1.split('_')
+            if parts[0] != 'camn':
+                expr_file_name = f"{parts[0]}_{parts[1]}_{parts[2]}_{parts[3]}_{parts[4]}_{parts[5]}_expr_{parts[6]}"
+                st.video(os.path.join(expr_source_path, expr_file_name))
+                
             st.video(os.path.join(source_path, ai_video_1))
-            similarity_score_1 = st.slider(
-                f"与 GT 的相似度评分 (1-5)", 1, 5, 3,
-                key=f"similarity_{i}_1"
+            # 添加选择题
+            # st.write("1. 你认为哪个的动作更丰富多样？（可以从动作幅度、动作重复度来评判）")
+            question1 = st.radio(
+                "1. 你认为哪个的动作更丰富多样？（可以从动作幅度、动作重复度来评判）",
+                ("AI 视频 1", "AI 视频 2", "AI 视频 3"),
+                key=f"q1_{i}",
+                # label_visibility='hidden'
             )
-            motion_accuracy_score_1 = st.slider(
-                f"动作是否符合音频语义评分 (1-5)", 1, 5, 3,
-                key=f"motion_accuracy_{i}_1"
+
+            # st.write("2. 你认为这两个模型的面部表情哪一个更好？（嘴唇运动是否符合音频发音）")
+            question2 = st.radio(
+                "2. 你认为这两个模型的面部表情哪一个更好？（嘴唇运动是否符合音频发音）",
+                ("AI 视频 1", "AI 视频 2", "AI 视频 3"),
+                key=f"q2_{i}",
+                # label_visibility='hidden'
             )
-            mouth_movement_score_1 = st.slider(
-                f"嘴部运动与 GT 的接近程度 (1-5)", 1, 5, 3,
-                key=f"mouth_movement_{i}_1"
-            )
-            overall_coordination_score_1 = st.slider(
-                f"请你结合身体运动和面部表情，给出综合协调度评分 (1-5)", 1, 5, 3,
-                key=f"overall_coordination_{i}_1"
+
+            # st.write("3. 综合考虑身体动作和面部表情，你认为哪一个的整体效果更好？（如果你觉得两者的动作没有明显的优劣，那请选择表情生成表现更好的模型）")
+            question3 = st.radio(
+                "3. 综合考虑身体动作和面部表情，你认为哪一个的整体效果更好？（如果你觉得两者的动作没有明显的优劣，那请选择表情生成表现更好的模型）",
+                ("AI 视频 1", "AI 视频 2", "AI 视频 3"),
+                key=f"q3_{i}",
+                # label_visibility='hidden'
             )
 
         with col3:
             st.subheader(f"AI 视频 2")
             st.video(os.path.join(source_path, ai_video_2))
-            similarity_score_2 = st.slider(
-                f"与 GT 的相似度评分 (1-5)", 1, 5, 3,
-                key=f"similarity_{i}_2"
-            )
-            motion_accuracy_score_2 = st.slider(
-                f"动作是否符合音频语义评分 (1-5)", 1, 5, 3,
-                key=f"motion_accuracy_{i}_2"
-            )
-            mouth_movement_score_2 = st.slider(
-                f"嘴部运动与 GT 的接近程度 (1-5)", 1, 5, 3,
-                key=f"mouth_movement_{i}_2"
-            )
-            overall_coordination_score_2 = st.slider(
-                f"请你结合身体运动和面部表情，综合协调度评分 (1-5)", 1, 5, 3,
-                key=f"overall_coordination_{i}_2"
-            )
+            parts = ai_video_2.split('_')
+            if parts[0] != 'camn':
+                expr_file_name = f"{parts[0]}_{parts[1]}_{parts[2]}_{parts[3]}_{parts[4]}_{parts[5]}_expr_{parts[6]}"
+                st.video(os.path.join(expr_source_path, expr_file_name))
+            # st.video(os.path.join(source_path, ai_video_2))
+            
+        with col4:
+            st.subheader(f"AI 视频 3")
+            st.video(os.path.join(source_path, ai_video_3))
+            parts = ai_video_3.split('_')
+            if parts[0] != 'camn':
+                expr_file_name = f"{parts[0]}_{parts[1]}_{parts[2]}_{parts[3]}_{parts[4]}_{parts[5]}_expr_{parts[6]}"
+                st.video(os.path.join(expr_source_path, expr_file_name))
+            # st.video(os.path.join(source_path, ai_video_3))
 
         # 将该组评分结果添加到字典中
+        if question1 == 'AI 视频 1':
+            ans1 = model_name_1
+        elif question1 == 'AI 视频 2':
+            ans1 = model_name_2
+        else:
+            ans1 = model_name_3
+            
+        if question2 == 'AI 视频 1':
+            ans2 = model_name_1
+        elif question2 == 'AI 视频 2':
+            ans2 = model_name_2
+        else:
+            ans2 = model_name_3
+            
+        if question3 == 'AI 视频 1':
+            ans3 = model_name_1
+        elif question3 == 'AI 视频 2':
+            ans3 = model_name_2
+        else:
+            ans3 = model_name_3
+            
         ratings.append({
             "group_id": i + 1,
-            "model_name": model_name_1,
-            "file_name": file_name_1,
-            "similarity_score": similarity_score_1,
-            "motion_accuracy_score": motion_accuracy_score_1,
-            "mouth_movement_score": mouth_movement_score_1,
-            "overall_coordination_score": overall_coordination_score_1
-        })
-        
-        ratings.append({
-            "group_id": i + 1,
-            "model_name": model_name_2,
-            "file_name": file_name_2,
-            "similarity_score": similarity_score_2,
-            "motion_accuracy_score": motion_accuracy_score_2,
-            "mouth_movement_score": mouth_movement_score_2,
-            "overall_coordination_score": overall_coordination_score_2
+            "file_name": file_name,
+            "diversity_score": ans1,  # 记录用户对第1题的选择
+            "expression_score": ans2,  # 记录用户对第2题的选择
+            "holistic_score": ans3   # 记录用户对第3题的选择
         })
 
     # 提交评分按钮
@@ -188,6 +219,7 @@ with st.form("survey_form"):
         with placeholder.container():
             st.write("### 感谢您的参与！")
             st.write("您的反馈对我们非常宝贵，我们会认真分析并改进。")
+            # st.stop()
 
 # 显示当前保存的数据
 # st.write("当前数据：")
